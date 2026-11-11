@@ -1,20 +1,19 @@
-
 package com.missai.app
 
 import android.app.Activity
+import android.os.Bundle
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.os.Bundle
 import android.view.Gravity
 import android.view.inputmethod.EditorInfo
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
+import android.widget.*
+import android.text.InputType
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : Activity() {
 
@@ -25,22 +24,59 @@ class MainActivity : Activity() {
     private val prefsName = "miss_ai_preferences"
     private val historyKey = "chat_history"
 
-    private val purple = Color.rgb(116, 75, 220)
-    private val backgroundColor = Color.rgb(18, 15, 30)
-    private val assistantBubble = Color.rgb(43, 35, 62)
-    private val userBubble = Color.rgb(91, 60, 160)
+    private val bg = Color.rgb(12, 8, 23)
+    private val panel = Color.rgb(25, 16, 42)
+    private val purple = Color.rgb(139, 45, 255)
+    private val pink = Color.rgb(225, 65, 255)
+    private val cyan = Color.rgb(65, 190, 255)
+    private val white = Color.WHITE
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         createScreen()
         loadHistory()
 
         if (messages.childCount == 0) {
             addMessage(
                 "assistant",
-                "नमस्ते! मैं MISS AI हूँ। बताओ, मैं तुम्हारी क्या मदद कर सकती हूँ?"
+                "नमस्ते! 👋 मैं MISS AI हूँ। तुम्हारी personal AI companion. बताओ, आज क्या करना है?"
             )
+        }
+    }
+
+    private fun gradient(
+        colors: IntArray,
+        radius: Float
+    ): GradientDrawable {
+        return GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
+            colors
+        ).apply {
+            cornerRadius = radius
+        }
+    }
+
+    private fun solid(
+        color: Int,
+        radius: Float
+    ): GradientDrawable {
+        return GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = radius
+        }
+    }
+
+    private fun makeText(
+        value: String,
+        size: Float,
+        color: Int,
+        bold: Boolean = false
+    ): TextView {
+        return TextView(this).apply {
+            text = value
+            textSize = size
+            setTextColor(color)
+            if (bold) typeface = Typeface.DEFAULT_BOLD
         }
     }
 
@@ -48,110 +84,227 @@ class MainActivity : Activity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(backgroundColor)
+            setBackgroundColor(bg)
         }
 
+        // Header
         val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(18, 18, 18, 18)
+            setBackgroundColor(panel)
+        }
+
+        val logo = ImageView(this).apply {
+            setImageResource(R.drawable.ic_miss_ai)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+
+        header.addView(
+            logo,
+            LinearLayout.LayoutParams(52, 52)
+        )
+
+        val brand = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(16, 20, 16, 20)
-            setBackgroundColor(Color.rgb(29, 22, 45))
+            setPadding(12, 0, 0, 0)
         }
 
-        val title = TextView(this).apply {
-            text = "MISS AI"
-            textSize = 25f
-            setTextColor(Color.WHITE)
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-        }
+        val brandTitle = makeText("MISS AI", 23f, white, true)
+        val brandSubtitle = makeText(
+            "Your Personal AI Companion",
+            11f,
+            Color.rgb(190, 160, 225)
+        )
 
-        val subtitle = TextView(this).apply {
-            text = "Your personal AI companion"
-            textSize = 12f
-            setTextColor(Color.LTGRAY)
-            gravity = Gravity.CENTER
-        }
+        brand.addView(brandTitle)
+        brand.addView(brandSubtitle)
 
-        header.addView(title)
-        header.addView(subtitle)
+        header.addView(
+            brand,
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+
+        val status = makeText("●", 14f, Color.rgb(70, 230, 160))
+        header.addView(status)
 
         root.addView(
             header,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            LinearLayout.LayoutParams(-1, -2)
         )
 
+        val line = android.view.View(this).apply {
+            setBackgroundColor(Color.rgb(100, 35, 160))
+        }
+
+        root.addView(
+            line,
+            LinearLayout.LayoutParams(-1, 1)
+        )
+
+        // Chat area
         scrollView = ScrollView(this).apply {
             isFillViewport = true
+            clipToPadding = false
         }
 
         messages = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(12, 16, 12, 16)
+            setPadding(14, 18, 14, 18)
         }
 
         scrollView.addView(messages)
 
         root.addView(
             scrollView,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
+            LinearLayout.LayoutParams( -1, 0, 1f)
         )
 
-        val bottom = LinearLayout(this).apply {
+        // Voice visual
+        val voiceArea = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(8, 8, 8, 12)
+        }
+
+        val voiceButton = TextView(this).apply {
+            text = "▂▅▇▅▂"
+            textSize = 25f
+            gravity = Gravity.CENTER
+            setTextColor(white)
+            background = gradient(
+                intArrayOf(pink, purple, cyan),
+                60f
+            )
+            setPadding(28, 8, 28, 8)
+            setOnClickListener {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Voice feature will be added soon.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        voiceArea.addView(
+            voiceButton,
+            LinearLayout.LayoutParams(-2, 52)
+        )
+
+        val voiceLabel = makeText(
+            "TAP TO TALK • COMING SOON",
+            10f,
+            Color.rgb(170, 135, 210),
+            true
+        )
+
+        voiceLabel.setPadding(0, 7, 0, 0)
+        voiceArea.addView(voiceLabel)
+
+        root.addView(
+            voiceArea,
+            LinearLayout.LayoutParams(-1, -2)
+        )
+
+        // Message composer
+        val composer = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(10, 10, 10, 10)
-            setBackgroundColor(Color.rgb(29, 22, 45))
+            setPadding(12, 10, 12, 10)
+            setBackgroundColor(panel)
         }
 
         input = EditText(this).apply {
             hint = "Message MISS AI..."
-            setHintTextColor(Color.LTGRAY)
-            setTextColor(Color.WHITE)
+            setHintTextColor(Color.rgb(160, 140, 185))
+            setTextColor(white)
             textSize = 15f
             setSingleLine(true)
+            inputType = InputType.TYPE_CLASS_TEXT or
+                    InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
             imeOptions = EditorInfo.IME_ACTION_SEND
-            setPadding(14, 10, 14, 10)
-            background = rounded(
-                Color.rgb(48, 39, 65),
-                24
+            setPadding(16, 0, 16, 0)
+            background = solid(
+                Color.rgb(43, 29, 65),
+                45f
             )
         }
 
-        val sendButton = Button(this).apply {
-            text = "Send"
-            textSize = 14f
-            setTextColor(Color.WHITE)
-            background = rounded(purple, 24)
-            isAllCaps = false
+        composer.addView(
+            input,
+            LinearLayout.LayoutParams(0, 52, 1f).apply {
+                marginEnd = 9
+            }
+        )
+
+        val send = TextView(this).apply {
+            text = "➤"
+            textSize = 22f
+            gravity = Gravity.CENTER
+            setTextColor(white)
+            background = gradient(
+                intArrayOf(pink, purple),
+                50f
+            )
             setOnClickListener {
                 sendMessage()
             }
         }
 
-        bottom.addView(
-            input,
-            LinearLayout.LayoutParams(0, 52, 1f).apply {
-                marginEnd = 8
-            }
+        composer.addView(
+            send,
+            LinearLayout.LayoutParams(54, 52)
         )
 
-        bottom.addView(
-            sendButton,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                52
-            )
+        root.addView(
+            composer,
+            LinearLayout.LayoutParams(-1, -2)
         )
 
-        root.addView(bottom)
+        // Bottom navigation
+        val navigation = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(8, 12, 8, 14)
+            setBackgroundColor(Color.rgb(18, 11, 31))
+        }
+
+        val chatTab = navItem("⌂", "Chat", true)
+        val historyTab = navItem("◷", "History", false)
+        val settingsTab = navItem("⚙", "Settings", false)
+
+        navigation.addView(
+            chatTab,
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+
+        navigation.addView(
+            historyTab,
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+
+        navigation.addView(
+            settingsTab,
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+
+        historyTab.setOnClickListener {
+            Toast.makeText(
+                this,
+                "Your conversations are saved automatically.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        settingsTab.setOnClickListener {
+            Toast.makeText(
+                this,
+                "Settings will be added soon.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        root.addView(navigation)
 
         input.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND) {
@@ -165,14 +318,32 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
-    private fun rounded(
-        color: Int,
-        radius: Int
-    ): GradientDrawable {
+    private fun navItem(
+        symbol: String,
+        label: String,
+        selected: Boolean
+    ): LinearLayout {
 
-        return GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = radius.toFloat()
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(8, 3, 8, 3)
+
+            val icon = makeText(
+                symbol,
+                24f,
+                if (selected) pink else Color.LTGRAY
+            )
+
+            val title = makeText(
+                label,
+                11f,
+                if (selected) pink else Color.LTGRAY,
+                selected
+            )
+
+            addView(icon)
+            addView(title)
         }
     }
 
@@ -189,7 +360,7 @@ class MainActivity : Activity() {
 
         messages.postDelayed({
             addMessage("assistant", reply)
-        }, 350)
+        }, 400)
     }
 
     private fun addMessage(
@@ -204,37 +375,42 @@ class MainActivity : Activity() {
             } else {
                 Gravity.START
             }
-            setPadding(4, 5, 4, 5)
+            setPadding(2, 7, 2, 7)
+            tag = role
         }
 
         val bubble = TextView(this).apply {
             this.text = text
             textSize = 15f
-            setTextColor(Color.WHITE)
-            setPadding(15, 11, 15, 11)
-            background = rounded(
-                if (role == "user") userBubble
-                else assistantBubble,
-                18
-            )
+            setTextColor(white)
+            setPadding(16, 13, 16, 13)
+            maxWidth = (resources.displayMetrics.widthPixels * 0.78f).toInt()
+
+            background = if (role == "user") {
+                gradient(
+                    intArrayOf(
+                        Color.rgb(120, 35, 230),
+                        Color.rgb(190, 45, 235)
+                    ),
+                    24f
+                )
+            } else {
+                solid(
+                    Color.rgb(43, 29, 65),
+                    24f
+                )
+            }
         }
 
         row.addView(
             bubble,
-            LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                0.85f
-            )
+            LinearLayout.LayoutParams(-2, -2)
         )
 
-        if (role == "user") {
-            row.gravity = Gravity.END
-        } else {
-            row.gravity = Gravity.START
-        }
-
-        messages.addView(row)
+        messages.addView(
+            row,
+            LinearLayout.LayoutParams(-1, -2)
+        )
 
         scrollView.post {
             scrollView.fullScroll(ScrollView.FOCUS_DOWN)
@@ -245,61 +421,53 @@ class MainActivity : Activity() {
 
     private fun generateReply(message: String): String {
 
-        val text = message.lowercase()
+        val text = message.lowercase(Locale.getDefault())
 
         return when {
 
             text.contains("hello") ||
             text.contains("hi") ||
             text.contains("नमस्ते") ||
-            text.contains("हेलो") -> {
+            text.contains("हेलो") ->
                 "नमस्ते! 😊 बताओ, आज क्या बात करनी है?"
-            }
 
             text.contains("your name") ||
-            text.contains("तुम्हारा नाम") -> {
+            text.contains("तुम्हारा नाम") ->
                 "मेरा नाम MISS AI है। मैं तुम्हारी personal assistant हूँ।"
-            }
 
             text.contains("how are you") ||
-            text.contains("कैसी हो") -> {
+            text.contains("कैसी हो") ->
                 "मैं ठीक हूँ! तुम बताओ, कैसे हो?"
-            }
 
             text.contains("time") ||
-            text.contains("समय") -> {
+            text.contains("समय") ->
                 "अभी का समय: ${
-                    java.text.SimpleDateFormat(
+                    SimpleDateFormat(
                         "hh:mm a",
-                        java.util.Locale.getDefault()
-                    ).format(java.util.Date())
+                        Locale.getDefault()
+                    ).format(Date())
                 }"
-            }
 
             text.contains("date") ||
-            text.contains("तारीख") -> {
+            text.contains("तारीख") ->
                 "आज की तारीख: ${
-                    java.text.SimpleDateFormat(
+                    SimpleDateFormat(
                         "dd MMMM yyyy",
-                        java.util.Locale.getDefault()
-                    ).format(java.util.Date())
+                        Locale.getDefault()
+                    ).format(Date())
                 }"
-            }
 
             text.contains("thank") ||
             text.contains("धन्यवाद") ||
-            text.contains("शुक्रिया") -> {
+            text.contains("शुक्रिया") ->
                 "तुम्हारा स्वागत है! ❤️"
-            }
 
             text.contains("bye") ||
-            text.contains("बाय") -> {
+            text.contains("बाय") ->
                 "फिर मिलेंगे! अपना ख्याल रखना।"
-            }
 
-            else -> {
+            else ->
                 "मैंने तुम्हारी बात समझने की कोशिश की। अभी मेरी offline intelligence सीमित है। असली AI responses के लिए AI model integration जोड़ना होगा।"
-            }
         }
     }
 
@@ -316,14 +484,8 @@ class MainActivity : Activity() {
 
                 val bubble = row.getChildAt(0) as TextView
 
-                val role = if (row.gravity == Gravity.END) {
-                    "user"
-                } else {
-                    "assistant"
-                }
-
                 val item = JSONObject()
-                item.put("role", role)
+                item.put("role", row.tag?.toString() ?: "assistant")
                 item.put("text", bubble.text.toString())
 
                 array.put(item)
@@ -338,7 +500,7 @@ class MainActivity : Activity() {
             ).apply()
 
         } catch (_: Exception) {
-            // Ignore history saving errors.
+            // Ignore history errors.
         }
     }
 
@@ -363,7 +525,7 @@ class MainActivity : Activity() {
             }
 
         } catch (_: Exception) {
-            // Start with an empty chat if history is invalid.
+            // Start with empty history.
         }
     }
 }
