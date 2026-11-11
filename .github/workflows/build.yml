@@ -31,21 +31,19 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
-        with:
-          packages: 'platform-tools'
 
-      - name: Install Android SDK
+      - name: Install Android SDK packages
         run: |
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+          sdkmanager --install \
+            "platforms;android-36" \
+            "build-tools;36.0.0"
 
       - name: Validate Android Manifest
         run: |
-          echo "Checking manifest..."
-          sed -n '1,100l' app/src/main/AndroidManifest.xml
           python3 -c "import xml.etree.ElementTree as ET; ET.parse('app/src/main/AndroidManifest.xml'); print('MANIFEST XML IS VALID')"
 
       - name: Build APK
-        run: gradle --no-daemon assembleDebug --stacktrace
+        run: gradle --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -53,5 +51,3 @@ jobs:
           name: MISS-AI-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-
-          
