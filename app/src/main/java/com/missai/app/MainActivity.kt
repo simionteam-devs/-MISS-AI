@@ -144,47 +144,189 @@ class MainActivity : Activity() {
         bottom.addView(send, sendParams)
         root.addView(bottom)
 
+
+package com.missai.app
+
+import android.app.Activity
+import android.os.Bundle
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import android.view.inputmethod.EditorInfo
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
+import org.json.JSONArray
+import org.json.JSONObject
+
+class MainActivity : Activity() {
+
+    private lateinit var messages: LinearLayout
+    private lateinit var input: EditText
+    private lateinit var scroll: ScrollView
+
+    private val prefsName = "miss_ai_memory"
+
+    private val backgroundColor = Color.rgb(17, 15, 29)
+    private val purpleColor = Color.rgb(125, 75, 220)
+    private val assistantColor = Color.rgb(42, 36, 58)
+    private val textColor = Color.WHITE
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        window.statusBarColor = backgroundColor
+        window.navigationBarColor = backgroundColor
+
+        createInterface()
+        loadHistory()
+    }
+
+    private fun createInterface() {
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(backgroundColor)
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(12), dp(8), dp(16))
+        }
+
+        val title = TextView(this).apply {
+            text = "MISS AI"
+            textSize = 28f
+            setTextColor(textColor)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+        }
+
+        val subtitle = TextView(this).apply {
+            text = "Your personal AI companion"
+            textSize = 13f
+            setTextColor(Color.LTGRAY)
+            gravity = Gravity.CENTER
+        }
+
+        header.addView(title)
+        header.addView(subtitle)
+
+        root.addView(
+            header,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+
+        scroll = ScrollView(this).apply {
+            fillViewport = true
+            isSmoothScrollingEnabled = true
+        }
+
+        messages = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(8), 0, dp(12))
+        }
+
+        scroll.addView(messages)
+
+        root.addView(
+            scroll,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        )
+
+        val bottom = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(10), 0, dp(4))
+        }
+
+        input = EditText(this).apply {
+            hint = "Message MISS AI..."
+            textSize = 15f
+            setTextColor(textColor)
+            setHintTextColor(Color.GRAY)
+            singleLine = true
+            imeOptions = EditorInfo.IME_ACTION_SEND
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = rounded(
+                assistantColor,
+                24
+            )
+        }
+
+        val sendButton = Button(this).apply {
+            text = "Send"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            background = rounded(purpleColor, 24)
+            isAllCaps = false
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+
+        bottom.addView(
+            input,
+            LinearLayout.LayoutParams(
+                0,
+                dp(52),
+                1f
+            )
+        )
+
+        val buttonParams = LinearLayout.LayoutParams(
+            dp(76),
+            dp(52)
+        )
+
+        buttonParams.marginStart = dp(8)
+
+        bottom.addView(sendButton, buttonParams)
+
+        root.addView(bottom)
+
         setContentView(root)
 
-        send.setOnClickListener {
+        sendButton.setOnClickListener {
             sendMessage()
         }
 
-        input.setOnEditorActionListener { _, action, _ ->
-            if (action == EditorInfo.IME_ACTION_SEND) {
+        input.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEND) {
                 sendMessage()
                 true
             } else {
                 false
             }
         }
-
-        loadHistory()
-
-        if (history.isEmpty()) {
-            addMessage(
-                "Hey! I'm Miss ✨\n\n" +
-                "I'm still being built, but I'm here. " +
-                "Tell me something about your day!",
-                false
-            )
-        }
     }
 
     private fun sendMessage() {
-        val text = input.text.toString().trim()
 
-        if (text.isEmpty()) return
+        val message = input.text.toString().trim()
 
-        input.text.clear()
-        addMessage(text, true)
+        if (message.isEmpty()) return
 
-        val reply = getStarterReply(text)
-        addMessage(reply, false)
+        input.setText("")
+
+        addMessage("user", message)
+        saveHistory()
+
+        val reply = getStarterReply(message)
+
+        addMessage("assistant", reply)
+        saveHistory()
     }
-
-    // Temporary starter brain.
-    // Real local AI model comes in the next stage.
 
     private fun getStarterReply(message: String): String {
 
@@ -193,50 +335,61 @@ class MainActivity : Activity() {
         return when {
 
             text.contains("hello") ||
-            text == "hi" ||
-            text.contains("hey miss") ->
-                "Hey! 😄 What's happening? Tell me everything."
+            text.contains("hi") ||
+            text.contains("hey") ||
+            text.contains("hii") -> {
+                "Hey! I'm MISS AI. What's on your mind today?"
+            }
 
-            text.contains("who are you") ->
-                "I'm MISS AI, your personal companion. " +
-                "My proper AI brain is coming soon! ✨"
+            text.contains("your name") -> {
+                "I'm MISS AI, your personal AI companion."
+            }
 
-            text.contains("how are you") ->
-                "I'm doing great! Just waiting for " +
-                "some interesting conversation. 😄"
+            text.contains("how are you") -> {
+                "I'm running smoothly! Tell me, how is your day going?"
+            }
 
-            text.contains("bored") ->
-                "Bored already? 😂 Come on, let's talk. " +
-                "What's on your mind?"
+            text.contains("thank") -> {
+                "You're welcome! What shall we talk about next?"
+            }
 
-            text.contains("call") ||
-            text.contains("message") ||
-            text.contains("open") ->
-                "I understand that phone command, but " +
-                "device control isn't connected yet. " +
-                "We'll add it with proper permissions."
+            text.contains("who made you") -> {
+                "I'm MISS AI. I'm being developed as your personal AI companion."
+            }
 
-            text.contains("remember") ->
-                "I can save our conversation locally. " +
-                "Long-term intelligent memory is a feature " +
-                "we'll build separately."
+            text.contains("bye") -> {
+                "See you later! I'll be here when you return."
+            }
 
-            text.contains("thank") ->
-                "You're welcome! 😊"
-
-            else ->
-                "I hear you. ❤️ I'm still waiting for " +
-                "my local language model, so I can't " +
-                "properly understand every topic yet. " +
-                "But your message has been saved."
+            else -> {
+                "I received your message: \"$message\"\n\n" +
+                "My real AI intelligence is not connected yet. " +
+                "That will be our next development step."
+            }
         }
     }
 
-    private fun addMessage(
-        text: String,
-        isUser: Boolean,
-        save: Boolean = true
-    ) {
+    private fun addMessage(role: String, message: String) {
+
+        val isUser = role == "user"
+
+        val bubble = TextView(this).apply {
+            text = message
+            textSize = 15f
+            setTextColor(textColor)
+            setPadding(
+                dp(14),
+                dp(11),
+                dp(14),
+                dp(11)
+            )
+            maxWidth = dp(290)
+
+            background = rounded(
+                if (isUser) purpleColor else assistantColor,
+                18
+            )
+        }
 
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -244,90 +397,107 @@ class MainActivity : Activity() {
             setPadding(0, dp(5), 0, dp(5))
         }
 
-        val bubble = TextView(this).apply {
-            this.text = text
-            textSize = 15f
-            setTextColor(Color.WHITE)
-            setPadding(
-                dp(14), dp(12), dp(14), dp(12)
-            )
+        row.addView(bubble)
 
-            background = rounded(
-                if (isUser) {
-                    Color.rgb(91, 65, 145)
-                } else {
-                    Color.rgb(38, 32, 51)
-                },
-                18f
-            )
-        }
-
-        row.addView(
-            bubble,
+        messages.addView(
+            row,
             LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         )
 
-        messages.addView(row)
-
-        if (save) {
-            history.add(text to isUser)
-            saveHistory()
-        }
-
         scroll.post {
-            scroll.fullScroll(View.FOCUS_DOWN)
+            scroll.fullScroll(ScrollView.FOCUS_DOWN)
         }
     }
 
     private fun saveHistory() {
-        val array = JSONArray()
 
-        history.forEach { item ->
-            val obj = JSONObject()
-            obj.put("text", item.first)
-            obj.put("user", item.second)
-            array.put(obj)
+        try {
+            val array = JSONArray()
+
+            for (i in 0 until messages.childCount) {
+
+                val row = messages.getChildAt(i) as LinearLayout
+
+                if (row.childCount == 0) continue
+
+                val bubble = row.getChildAt(0) as TextView
+
+                val role = if (
+                    (bubble.background as? GradientDrawable) != null
+                ) {
+                    // Determine sender from bubble alignment.
+                    if (row.gravity == Gravity.END) "user"
+                    else "assistant"
+                } else {
+                    "assistant"
+                }
+
+                val item = JSONObject()
+                item.put("role", role)
+                item.put("text", bubble.text.toString())
+
+                array.put(item)
+            }
+
+            getSharedPreferences(
+                prefsName,
+                MODE_PRIVATE
+            ).edit().putString(
+                "messages",
+                array.toString()
+            ).apply()
+
+        } catch (_: Exception) {
+            // Keep the app running if saving fails.
         }
-
-        prefs.edit()
-            .putString("chat_history", array.toString())
-            .apply()
     }
 
     private fun loadHistory() {
 
-        val stored = prefs.getString("chat_history", null)
-            ?: return
-
         try {
-            val array = JSONArray(stored)
+            val saved = getSharedPreferences(
+                prefsName,
+                MODE_PRIVATE
+            ).getString("messages", "[]") ?: "[]"
+
+            val array = JSONArray(saved)
 
             for (i in 0 until array.length()) {
-                val obj = array.getJSONObject(i)
 
-                val text = obj.getString("text")
-                val user = obj.getBoolean("user")
+                val item = array.getJSONObject(i)
 
-                history.add(text to user)
-                addMessage(text, user, false)
+                addMessage(
+                    item.optString("role", "assistant"),
+                    item.optString("text", "")
+                )
             }
 
-        } catch (e: Exception) {
-            history.clear()
-            prefs.edit().remove("chat_history").apply()
+        } catch (_: Exception) {
+            addMessage(
+                "assistant",
+                "Hey! I'm MISS AI. Welcome back."
+            )
+        }
+
+        if (messages.childCount == 0) {
+            addMessage(
+                "assistant",
+                "Hey! I'm MISS AI. I'm ready to chat with you."
+            )
         }
     }
 
     private fun rounded(
         color: Int,
-        radius: Float
+        radius: Int
     ): GradientDrawable {
+
         return GradientDrawable().apply {
             setColor(color)
-            cornerRadius = dp(radius.toInt()).toFloat()
+            cornerRadius = dp(radius).toFloat()
         }
     }
 
