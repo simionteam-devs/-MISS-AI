@@ -1,4 +1,10 @@
 
+      - name: Validate Android Manifest
+        run: |
+          echo "Checking actual manifest in GitHub..."
+          sed -n '1,100l' app/src/main/AndroidManifest.xml
+          python3 -c "import xml.etree.ElementTree as ET; ET.parse('app/src/main/AndroidManifest.xml'); print('MANIFEST XML IS VALID')"
+          
 name: Build MISS AI APK
 
 on:
