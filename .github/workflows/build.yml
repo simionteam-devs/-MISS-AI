@@ -41,12 +41,14 @@ jobs:
         run: |
           python3 -c "import xml.etree.ElementTree as ET; ET.parse('app/src/main/AndroidManifest.xml'); print('MANIFEST XML IS VALID')"
 
-      - name: Build APK
-        run: gradle --no-daemon assembleDebug --stacktrace --info
+            - name: Build APK
+        run: |
+          gradle --no-daemon assembleDebug 2>&1 | tee build-log.txt
+          test ${PIPESTATUS[0]} -eq 0
 
-      - name: Upload APK
+      - name: Upload error log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MISS-AI-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          name: MISS-AI-build-log
+          path: build-log.txt
