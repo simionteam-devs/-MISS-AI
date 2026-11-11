@@ -4,6 +4,7 @@
     <application
         android:allowBackup="true"
         android:label="MISS AI"
+        android:icon="@drawable/ic_miss_ai"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="false">
 
