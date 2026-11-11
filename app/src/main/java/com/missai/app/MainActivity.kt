@@ -116,7 +116,7 @@ class MainActivity : Activity() {
             setHintTextColor(Color.LTGRAY)
             setTextColor(Color.WHITE)
             textSize = 15f
-            singleLine = true
+            setSingleLine(true)
             imeOptions = EditorInfo.IME_ACTION_SEND
             setPadding(14, 10, 14, 10)
             background = rounded(
